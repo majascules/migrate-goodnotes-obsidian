@@ -1,0 +1,16 @@
+# compiled Swift helpers — build them locally
+tools/pdfpages
+tools/render
+tools/ocr
+
+# anything derived from real notebooks must never be committed
+*.jsonl
+*.json
+pages/
+pages-*/
+transcripts/
+ocr/
+build/
+
+.DS_Store
+__pycache__/
