@@ -98,7 +98,7 @@ input entirely from an image of the page.
 
 |  | reads | good at | blind to |
 |---|---|---|---|
-| **handwriting recognition** (GoodNotes) | pen strokes | your cursive, proper nouns | anything that isn't a stroke |
+| **handwriting recognition** (GoodNotes) | pen strokes | cursive and proper nouns, *relative to OCR* | anything that isn't a stroke |
 | **OCR** (a Vision pass) | the rendered image | printed text, pasted screenshots | nothing — but it *sees* a diagram without understanding it |
 
 The practical consequence, for anyone who has wondered why GoodNotes search misses
@@ -130,6 +130,52 @@ engine, and this is inference from behaviour, not from its internals.
 **Neither is sufficient alone.** If your notebooks contain pasted screenshots — mine were
 full of them — the app's own search has never seen that text, and neither will anything
 you build on the export.
+
+### And neither of them is what read the pages
+
+Both engines were compared against a third option on the same page: **Claude**, reading
+the rendered page image directly.
+
+"Recognition" gets used for all of this, so here is who actually did what:
+
+| job | done by |
+|---|---|
+| Handwriting recognition over stroke data | GoodNotes, in the app, at export time |
+| OCR over rendered pages | Apple's Vision framework, locally — `tools/ocr` |
+| Reading handwriting that a person could read and neither engine could | Claude, from the page image |
+| Describing what a drawing *is* | Claude, from the page image |
+| Confirming uncertain readings against the page | me |
+| Blessing recurring proper nouns, once each | me |
+| Deciding what got filed and what was held back | me |
+
+The first two are in this repo. The middle two are not code and cannot be. The last three
+are the reason the middle two can be trusted at all.
+
+On one page carrying a company name, a person's full name and two internal acronyms, both
+engines garbled **every proper noun on it**. Claude's read got them right, and I checked
+three of them word for word against the page image. That check is why this is a result
+rather than an impression.
+
+Two rows that carry nothing identifying, reproduced exactly:
+
+| on the page | GoodNotes | Vision | Claude |
+|---|---|---|---|
+| Renumeration | `Rummation` | `Piration` | Renumeration |
+| Beta / Socialize NO. | `Beta/Souilize No` | `Muta/Saulize NO .` | Beta / Socialize NO. |
+
+The proper nouns themselves can't be printed here — they are a real company and a real
+person — but that is also the finding: **proper nouns are exactly where both engines
+failed, and proper nouns are what you search for.**
+
+Beyond the words, both engines emit flat text, including one line of `iiiiiiiiiiiiiiii-`.
+Claude's read carried the page's structure: what sat in the top right, what was centred,
+what was underlined. Neither engine is built to report that, and on a diagram the
+structure is most of the meaning.
+
+**What this does not establish.** One page, three phrases checked by hand. It is not a
+rate, and no corpus-wide comparison was run — by the time the question mattered, the whole
+corpus was already being read this way. Take it as evidence of *where* the engines fail,
+proper nouns and structure, rather than how often.
 
 ## 4. Tier your pages before you spend anything on them
 

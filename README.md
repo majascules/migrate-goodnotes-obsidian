@@ -1,31 +1,35 @@
 # migrate-goodnotes-obsidian
 
-Getting ten years of handwritten notebooks out of GoodNotes and into Obsidian, and what
-that turns out to require.
+I had 10 years of handwritten notebooks, annotated PDFs, and whiteboard sessions in GoodNotes. And I needed that information findable in Obsidian. A simple export > import failed miserably.  This project is a best-effort attempt to ingest Goodnotes materials and make them a searchable archive inside of your Obsidian. One or more GoodNotes export(s) are put into your Obsidian vault, with some shepherding from you, and provides stats to help you understand what was done. This is a migration, not a sync tool.
 
-> GoodNotes' notes are fundamentally graphic, hand-drawn, hand-written. They are a
-> different beast than the neat data of Obsidian. Importing it required extraction but
-> also understanding. Recognition to get content yes (and the handwriting recognition
-> latent in GoodNotes is atrocious), but also vision to analyze the pages that weren't
-> fundamentally text, and then fusion: describe what we saw so it would be searchable.
-> **If it can't be found in Obsidian, it's basically non-extant. Dead.**
+GoodNotes' notes are fundamentally graphic, hand-drawn, hand-written. E.g. A flow diagram for a process: a page of drawn circles and arrows can be exported and import but still be lost, because there was little text to extract. Making Goodnotes accessible in Obsidian requires extraction AND understanding.
 
-That last line is the whole problem. Findability is the test, not fidelity — and the
-pages that most need help are the ones with the least text on them. A page of circles and
-arrows can be extracted perfectly and still be dead, because there was never anything on
-it to extract.
+Recognition to get content yes (and the handwriting recognition latent in GoodNotes is atrocious), but also machine-vision to analyze the graphical content, and then fusion: take the original text, the handwriting, the images, and describe the page in a way that makes it findable.
 
-Two different engines are in play, and conflating them is the mistake that costs you:
+The rule is: **If it can't be found in Obsidian, it's basically non-extant. Lost.** "Findability" became the test, not just fidelity. The pages that most need help are the ones with the least text on them. 
+
+Three different things can read a page, and conflating them is the mistake that costs you:
 
 - **Handwriting recognition** — what GoodNotes runs. It works from the **strokes**: the
-  pen's path, recorded as you draw. That is why it is good at cursive and why it cannot
-  see a single word inside a pasted screenshot. It never looks at pixels.
+  pen's path, recorded as you draw. It is marginal at cursive, and it ignores text inside
+  images and screenshots entirely, because it never looks at pixels.
+
 - **OCR** — what a Vision pass runs. It works from the **rendered image**. That is why it
   reads pasted screenshots cleanly and why it is worse than GoodNotes at your actual
   handwriting.
 
-Neither is a better version of the other. They read different things, and a page can
-easily contain both.
+- **A multimodal read** — **Claude**, looking at the page image the way a person would.
+  This is what actually transcribed the hard pages here and wrote their descriptions. On
+  a page where both engines garbled every proper noun, it got them all right and I checked
+  three word for word. It is also the only one of the three that can say what a drawing
+  *is*. One page, three phrases verified — evidence about *where* the engines fail, not a
+  rate. The comparison is in [FINDINGS.md](FINDINGS.md), finding 3.
+
+The first two are not better or worse versions of each other. They read different things,
+and a page can easily contain both. The third is what you reach for when both have
+failed, which on a graphic notebook is most of the time.
+
+Full numbers, method, and the case for layer 3: **[FINDINGS.md](FINDINGS.md)**.
 
 So the job has three layers, and only the first two are what people mean by "getting
 notes out":
@@ -35,29 +39,10 @@ notes out":
 3. **Describe** — the only step that makes a *drawing* findable, and the one nothing
    off-the-shelf does
 
-This repo holds the measurements behind layers 1 and 2 — how far extraction actually gets
-you, exactly — and the tools used to take them. Layer 3 isn't code and can't be; it's a
-method, written up in [FINDINGS.md](FINDINGS.md).
-
-## What the measurements showed
-
-Ten notebooks, exported both ways GoodNotes offers, then measured:
-
-- the **editable** export contains **zero** extractable text — handwriting stays as 2,586
-  live ink annotations with no text layer at all
-- the **flattened** export carries the recognition as an invisible text layer, and does
-  **not** damage a source PDF's own text (114,494 chars in, 114,494 out)
-- GoodNotes' recognition covers **pen strokes only** — text inside a pasted screenshot is
-  invisible to it, and always has been
-
-That third one is where the argument turns. The failure isn't quality, it's category.
-Stroke-based recognition is blind to images by construction, and image-based OCR is
-blind to nothing *and* useless on a diagram — because a diagram's meaning was never
-written down on it. An engine that read every stroke perfectly would still leave a
-hand-drawn user-journey map unfindable, since *describing* is not something either kind
-of recognition does.
-
-Full numbers, method, and the case for layer 3: **[FINDINGS.md](FINDINGS.md)**.
+The tools here do layer 1, decide how much of layer 2 you actually have to pay for, and
+write the result into your vault. Layers 2 and 3 themselves are not code and this repo
+does not pretend otherwise: reading a page, and saying what it is, are things a person or
+a model does. What the tools can tell you is exactly how much is left for them.
 
 ## Tools
 
@@ -69,12 +54,13 @@ Full numbers, method, and the case for layer 3: **[FINDINGS.md](FINDINGS.md)**.
 | `tools/tier_pages.py` | Sort pages into *source / screenshot / blank / needs-reading* before spending anything on them. |
 | `tools/name_filter.py` | Separate real proper nouns from words the recognisers garbled. |
 | `tools/lexicon.py` | The system dictionary, plus the inflected forms it is missing. |
+| `tools/ingest.py` | Write a tiered export into an Obsidian vault. Dry run by default. |
 
 `tier_pages.py` is the one that matters most in practice: it decides which pages need a
 reader at all. On this corpus it cut 587 pages to 411, in seconds. It cannot *be* the
 reader — that's layer 3.
 
-### Why no OCR fallback
+### No OCR Fallback when the text-layer is absent
 
 Every convenient PDF-text library falls back to OCR when a page has no text layer. That
 answers *can this page be read* — a different question from *does this file contain
@@ -160,13 +146,31 @@ nothing is ever classified as a screenshot. An image-only page then reads as `bl
 which means finding 3, the one the argument turns on, is the finding you cannot
 reproduce.
 
+## Into the vault
+
+`ingest.py` runs the cheap pass end to end and writes one note per notebook.
+
+    python3 tools/ingest.py ~/MyVault "MyNotebook.pdf"           # dry run
+    python3 tools/ingest.py ~/MyVault "MyNotebook.pdf" --write
+
+Pages that extracted cleanly arrive as text. Pasted screenshots arrive as their OCR.
+Everything else arrives as the page image under a *Not yet read* marker — which is
+most of a graphic notebook, and is the honest state of it. Nothing here transcribes
+or describes; that is the expensive layer, and it is not code.
+
+It writes by appending and never truncates, skips notes it has already written so
+re-running is safe, and refuses to touch a note of the same name that it did not
+write. `--exclude` keeps named pages out of the vault entirely, which real notebooks
+turn out to need.
+
 ## Caveats
 
 Every threshold here is empirical, tuned against one corpus of ten notebooks and one
 person's handwriting. They are constants at the top of each file, with the measurements
 that produced them written down beside them. Expect to retune.
 
-Tested on GoodNotes 5, macOS, mid-2026.
+Tested on GoodNotes 5, macOS, mid-2026. The page reads were done with Claude in the same
+period; model behaviour moves, and that result should be expected to move with it.
 
 ## Licence
 
