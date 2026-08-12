@@ -60,6 +60,9 @@ a model does. What the tools can tell you is exactly how much is left for them.
 reader at all. On this corpus it cut 587 pages to 411, in seconds. It cannot *be* the
 reader — that's layer 3.
 
+A worked page, end to end — what each engine returned, what the tiering decided, and the
+description that made it findable: **[EXAMPLE.md](EXAMPLE.md)**.
+
 ### No OCR Fallback when the text-layer is absent
 
 Every convenient PDF-text library falls back to OCR when a page has no text layer. That

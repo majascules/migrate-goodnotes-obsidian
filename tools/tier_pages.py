@@ -6,7 +6,8 @@ whether that means your own eyes or a large model. Most pages don't need it. A p
 whose text already extracts cleanly needs nothing; a pasted screenshot is handled
 accurately by a cheap local OCR pass; a blank page needs nothing at all.
 
-Sorting pages into those buckets first cut one real job from 587 pages to 411. See
+Sorting pages into those buckets first cut one real job from 587 pages to 411 as the
+migration ran; 417 with this file's recalibrated threshold. See
 FINDINGS.md.
 
 Three signals, all cheap:
@@ -40,7 +41,27 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 
 BLANK_MAX = 25       # below this a page carries nothing but stroke noise
 SOURCE_MIN = 200     # a real printed page is not 40 characters long
-SOURCE_VALID = 0.65
+
+# Recalibrated from 0.65 to 0.75 on 2026-08-12, after `lexicon.py` was added.
+#
+# The migration ran with the raw system dictionary, 234,456 words. `lexicon.py` added
+# regular inflections and took it to 1,095,739, which raises every validity score,
+# which pushes pages up across this threshold. At 0.65 against the enriched
+# vocabulary, 66 of the 411 pages that needed reading were reclassified `source` —
+# marked as needing nothing, and silently dropped from the expensive queue.
+#
+# Measured over the same 587 pages, against what the run actually produced:
+#
+#     threshold   source   read   pages wrongly skipped   pages needlessly read
+#       0.65        171     343            66                      0
+#       0.73        106     408            10                      9
+#       0.75         97     417             7                     15
+#
+# 0.73 reproduces the original counts more closely. 0.75 ships because the two
+# errors are not equal: a page wrongly called `source` is never read and stays
+# unfindable, which is the failure this whole toolkit exists to prevent, while a
+# page wrongly called `read` costs a few minutes. Bias toward wasted effort.
+SOURCE_VALID = 0.75
 SHOT_DELTA = 250     # OCR beating the embedded layer by this much means an image
 SHOT_VALID = 0.50
 

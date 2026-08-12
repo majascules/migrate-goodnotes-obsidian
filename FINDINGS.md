@@ -197,6 +197,47 @@ seconds. `tools/tier_pages.py` implements it.
 The thresholds in that script are tuned to my handwriting and my notebooks. They are
 constants at the top of the file for exactly that reason.
 
+### The numbers above are what the run produced. The tool has since been recalibrated.
+
+This is worth reading, because it is the same failure as finding 5's second trap and it
+bit a different tool without anyone touching that tool.
+
+`lexicon.py` was written *after* the migration, to fix `name_filter.py`: the system
+dictionary lists base forms only, so `EXISING` had no `existing` to be close to. The fix
+added regular inflections and took the vocabulary from 234,456 words to 1,095,739.
+
+`tier_pages.py` imports the same dictionary. Its `SOURCE_VALID` threshold had been tuned
+against the small one. A richer vocabulary raises every page's validity score, so pages
+drift upward across the line that says *this page already has usable text, skip it*:
+
+| | source | screenshot | blank | needs reading |
+|---|---:|---:|---:|---:|
+| the migration, base dictionary, `SOURCE_VALID = 0.65` | 105 | 32 | 39 | **411** |
+| the same 587 pages, enriched dictionary, same 0.65 | 171 | 34 | 39 | **343** |
+| the same 587 pages, enriched dictionary, **0.75** | 97 | 34 | 39 | **417** |
+
+At 0.65 against the enriched vocabulary, **66 pages that needed reading were marked as
+needing nothing** and dropped silently from the expensive queue. No error, no warning; the
+count simply came out smaller and looked like an improvement.
+
+Pages with little text swing hardest, because validity is a ratio over a small
+denominator. One page in this corpus — a hand-drawn floor plan, see
+[EXAMPLE.md](EXAMPLE.md) — carries six alphabetic tokens. The inflection fix newly counted
+one of them, `coats`, as a real word. That single token moved the page from 0.500 to
+0.667 and flipped it out of the reading queue. The pages with the least text are the
+drawings, and the drawings are what the whole method exists for.
+
+`SOURCE_VALID` is now **0.75**. 0.73 reproduces the original counts more closely, but the
+two errors are not equal. A page wrongly called `source` is never read and stays
+unfindable, which is the failure this toolkit exists to prevent. A page wrongly called
+`read` costs a few minutes. Ship the bias toward wasted effort: 0.75 takes the silent
+drops from 66 to 7.
+
+**So the 411 above is what my run produced, and 417 is what the current tool gives on the
+same corpus.** Both are true and neither is the point. The point is that a threshold is
+only meaningful next to the data it was tuned against, and a shared dependency can retune
+it from a distance while every test still passes.
+
 ## 5. A garbled word is not a name
 
 Recognised handwriting is unusable as-is, but it is very useful as *evidence*. In
@@ -276,7 +317,14 @@ Two consequences worth stating plainly:
   decides *which* pages need a reader; it cannot be the reader. What is transferable is
   the method and the discipline, not a program you run.
 
+One page is worked through end to end in **[EXAMPLE.md](EXAMPLE.md)** — a hand-drawn floor
+plan, both engines' verbatim output, the tier decision, the description that was written,
+and a table of the search terms that exist only because of it.
+
 ### Where the effort actually went
+
+As the migration ran — see the recalibration note under finding 4 for what the current
+tool gives on the same pages.
 
 | tier | pages | what happened to them |
 |---|---:|---|
