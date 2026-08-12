@@ -6,7 +6,7 @@ GoodNotes' notes are fundamentally graphic, hand-drawn, hand-written. E.g. A flo
 
 Recognition to get content yes (and the handwriting recognition latent in GoodNotes is atrocious), but also machine-vision to analyze the graphical content, and then fusion: take the original text, the handwriting, the images, and describe the page in a way that makes it findable.
 
-The rule is: **If it can't be found in Obsidian, it's basically non-extant. Lost.** "Findability" became the test, not just fidelity. The pages that most need help are the ones with the least text on them. 
+The rule is: **If it can't be found in Obsidian, it's basically non-extant. Lost.** "Findability" + fidelity became the test. The pages that most need help are the ones with the least text on them. 
 
 Three different things can read a page, and conflating them is the mistake that costs you:
 
