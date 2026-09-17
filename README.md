@@ -1,8 +1,8 @@
 # migrate-goodnotes-obsidian
 
-I had 10 years of handwritten notebooks, annotated PDFs, and whiteboard sessions in GoodNotes. And I needed that information findable in Obsidian. A simple export > import failed miserably.  This project is a best-effort attempt to ingest Goodnotes materials and make them a searchable archive inside of your Obsidian. One or more GoodNotes export(s) are put into your Obsidian vault, with some shepherding from you, and provides stats to help you understand what was done. This is a migration, not a sync tool.
+I had 10 years of handwritten notebooks, annotated PDFs, and whiteboard sessions in GoodNotes. And I needed that information findable in Obsidian. A simple export > import failed miserably.  This project is a best-effort attempt to ingest GoodNotes materials and make them a searchable archive inside of your Obsidian. One or more GoodNotes export(s) are put into your Obsidian vault, with some shepherding from you, and provides stats to help you understand what was done. This is a migration, not a sync tool.
 
-GoodNotes' notes are fundamentally graphic, hand-drawn, hand-written. E.g. A flow diagram for a process: a page of drawn circles and arrows can be exported and import but still be lost, because there was little text to extract. Making Goodnotes accessible in Obsidian requires extraction AND understanding.
+GoodNotes' notes are fundamentally graphic, hand-drawn, hand-written. E.g. A flow diagram for a process: a page of drawn circles and arrows can be exported and imported but still be lost, because there was little text to extract. Making GoodNotes accessible in Obsidian requires extraction AND understanding.
 
 Recognition to get content yes (and the handwriting recognition latent in GoodNotes is atrocious), but also machine-vision to analyze the graphical content, and then fusion: take the original text, the handwriting, the images, and describe the page in a way that makes it findable.
 
@@ -57,8 +57,10 @@ a model does. What the tools can tell you is exactly how much is left for them.
 | `tools/ingest.py` | Write a tiered export into an Obsidian vault. Dry run by default. |
 
 `tier_pages.py` is the one that matters most in practice: it decides which pages need a
-reader at all. On this corpus it cut 587 pages to 411, in seconds. It cannot *be* the
-reader — that's layer 3.
+reader at all. On this corpus it cut 587 pages to 411, in seconds, as the migration ran.
+The current version gives 417 on the same pages, after a threshold was recalibrated; the
+reason is in [FINDINGS.md](FINDINGS.md), finding 4, and it is worth reading. It cannot *be*
+the reader. That's layers 2 and 3.
 
 A worked page, end to end — what each engine returned, what the tiering decided, and the
 description that made it findable: **[EXAMPLE.md](EXAMPLE.md)**.
@@ -70,16 +72,30 @@ answers *can this page be read* — a different question from *does this file co
 text*, which is the one you are asking when comparing two exports. `pdfpages` reports an
 image-only page as zero characters, which is the true answer.
 
+This is not a position against OCR; `tools/ocr` is right there in the table. It is what
+makes that tool useful. The screenshot test compares the file's own text against the
+image's, and a comparison needs two things measured differently. If `pdfpages` quietly fell
+back to OCR, both numbers would be the same and no page could ever be identified as a
+screenshot.
+
 ## Getting the exports
 
-Export each notebook **twice**. GoodNotes 5 makes the two useful options mutually
-exclusive: choosing `PDF Data` + `Editable` removes the `Enable Handwriting Recognition`
-option entirely, so no single export gives you both.
+Export the **flattened** copy. That is what every tool here reads.
+
+Export the **editable** copy too if you want one you can still edit in GoodNotes years from
+now. It is insurance, not a step: nothing in `tools/` reads it. You cannot get both
+properties in one file, because choosing `PDF Data` + `Editable` removes the
+`Enable Handwriting Recognition` option entirely.
 
 | export | what it is for |
 |---|---|
 | **Flattened**, with `Enable Handwriting Recognition` on | the working copy. Carries the recognition as a text layer. Extract from this one |
-| **Editable** + `PDF Data` | the archive. Round-trips back into GoodNotes with live ink, but there is nothing in it to mine |
+| **Editable** + `PDF Data` | the archive. Round-trips back into GoodNotes with live ink. A source PDF's own text survives in it, but nothing the flattened copy doesn't also have |
+
+Why export for a recognition layer that is this bad? Because it is not there to be read.
+It is there to be measured: it is one of the two cheap signals `tier_pages.py` sorts pages
+by, and it is the raw material `name_filter.py` mines for proper nouns. Bad text that is
+consistently bad is a usable instrument.
 
 Leave **`Include Page Background` on** for both. If your notebooks are built on imported
 PDFs, turning it off exports your handwriting floating on blank pages and silently

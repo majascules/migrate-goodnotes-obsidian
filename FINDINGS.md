@@ -7,8 +7,9 @@
 > fundamentally text, and then fusion: describe what we saw so it would be searchable.
 > **If it can't be found in Obsidian, it's basically non-extant. Dead.**
 
-Findability is the test. Not fidelity, not character counts — whether the thing turns up
-when you search for it two years later. And that reframes the whole job, because the
+Findability is the test, and fidelity with it. Not character counts: whether the thing
+turns up when you search for it two years later, and whether what turns up is true to the
+page. And that reframes the whole job, because the
 pages in the greatest danger are the ones with the least text on them.
 
 Take one page from these notebooks: a competitor-monitoring user journey. Six actors
